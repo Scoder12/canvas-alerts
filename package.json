@@ -1,0 +1,8 @@
+{
+  "name": "canvas-alerts",
+  "version": "1.0.0",
+  "description": "Discord bot to alert about assignments using canvas OAuth2",
+  "main": "index.js",
+  "repository": "https://github.com/Scoder12/canvas-alerts.git",
+  "license": "AGPL-3.0-or-later"
+}
