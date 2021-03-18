@@ -4,5 +4,8 @@
   "description": "Discord bot to alert about assignments using canvas OAuth2",
   "main": "index.js",
   "repository": "https://github.com/Scoder12/canvas-alerts.git",
-  "license": "AGPL-3.0-or-later"
+  "license": "AGPL-3.0-or-later",
+  "devDependencies": {
+    "typescript": "^4.2.3"
+  }
 }
