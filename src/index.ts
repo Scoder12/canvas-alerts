@@ -3,6 +3,45 @@ import fetch from "node-fetch";
 
 const client = new Client();
 
+const maxAssignmentTime = 1000 * 60 * 60 * 24 * 7;
+interface Assignment {
+  has_submitted_submissions: boolean;
+  due_at: string;
+}
+interface Course {
+  id: number;
+}
+
+async function getApi(route: string, param: string) {
+  const r = await fetch(
+    `https://${process.env.CANVAS_URL}${route}?access_token=${process.env.CANVAS_KEY}&per_page=999${param}`
+  );
+  return await r.json();
+}
+
+async function canvas() {
+  const classes: Course[] = await getApi(`/api/v1/courses`, "");
+  console.log(classes);
+  const assignments = await Promise.all(
+    classes.map(async ({ id }) => {
+      const api: Assignment[] = await getApi(
+        `/api/v1/courses/${id}/assignments`,
+        `&bucket=future`
+      );
+      return api.filter(({ due_at }) => {
+        const dueDate = Date.parse(due_at);
+        if (isNaN(dueDate)) {
+          return false;
+        }
+        const timeFromNow = dueDate - Date.now();
+        return timeFromNow < maxAssignmentTime;
+      });
+    })
+  );
+  return assignments.flat();
+}
+canvas().then(console.log);
+
 client.on("message", async (msg) => {
   if (msg.channel.type !== "dm" || msg.author.id === client.user?.id) return;
   if (msg.content === "Hello") {
