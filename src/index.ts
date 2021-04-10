@@ -1,4 +1,5 @@
 import { Client } from "discord.js";
+import { htmlToText } from "html-to-text";
 import fetch from "node-fetch";
 
 const client = new Client();
@@ -7,10 +8,15 @@ const maxAssignmentTime = 1000 * 60 * 60 * 24 * 7;
 interface Assignment {
   has_submitted_submissions: boolean;
   due_at: string;
+  description: string;
+  name: string;
+  html_url: string;
 }
 interface Course {
   id: number;
+  name: string;
 }
+type AssignmentWithName = Assignment & { className: string };
 
 async function getApi(route: string, param: string) {
   const r = await fetch(
@@ -19,28 +25,44 @@ async function getApi(route: string, param: string) {
   return await r.json();
 }
 
-async function canvas() {
+async function getAllAssignments(): Promise<AssignmentWithName[]> {
   const classes: Course[] = await getApi(`/api/v1/courses`, "");
   console.log(classes);
   const assignments = await Promise.all(
-    classes.map(async ({ id }) => {
+    classes.map(async ({ id, name }) => {
       const api: Assignment[] = await getApi(
         `/api/v1/courses/${id}/assignments`,
         `&bucket=future`
       );
-      return api.filter(({ due_at }) => {
-        const dueDate = Date.parse(due_at);
-        if (isNaN(dueDate)) {
-          return false;
-        }
-        const timeFromNow = dueDate - Date.now();
-        return timeFromNow < maxAssignmentTime;
-      });
+      return api
+        .filter(({ due_at }) => {
+          const dueDate = Date.parse(due_at);
+          if (isNaN(dueDate)) {
+            return false;
+          }
+          const timeFromNow = dueDate - Date.now();
+          return timeFromNow < maxAssignmentTime;
+        })
+        .map((a) => ({ className: name, ...a }));
     })
   );
   return assignments.flat();
 }
-canvas().then(console.log);
+getAllAssignments().then((assignments: AssignmentWithName[]) =>
+  console.log(assignments.map(messageGen))
+);
+
+function messageGen({
+  description,
+  name,
+  due_at,
+  html_url,
+  className,
+}: AssignmentWithName) {
+  return `${className} Assignment ${name} is due at ${due_at} \n${html_url} \n\n${htmlToText(
+    description
+  )}`;
+}
 
 client.on("message", async (msg) => {
   if (msg.channel.type !== "dm" || msg.author.id === client.user?.id) return;
