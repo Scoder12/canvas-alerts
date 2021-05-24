@@ -106,10 +106,10 @@ client.on("message", async (msg) => {
       msg.channel.send("Error please provide your auth token.");
       return;
     }
-    msg.channel.send("loading..........");
+    const loadingMessage = await msg.channel.send("loading..........");
     getAllAssignments(auth)
       .then((assignments: AssignmentWithName[]) => {
-        msg.channel.send(assignments.map(messageGen));
+        loadingMessage.edit(assignments.map(messageGen));
       })
       .catch(() => msg.channel.send("Please provide a valid token"));
   } else if (msg.content == "help") {
