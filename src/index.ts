@@ -1,5 +1,5 @@
 import { Client } from "discord.js";
-import { htmlToText } from "html-to-text";
+// import { htmlToText } from "html-to-text";
 import fetch from "node-fetch";
 
 const client = new Client();
@@ -27,7 +27,7 @@ async function getApi(route: string, param: string) {
 
 async function getAllAssignments(): Promise<AssignmentWithName[]> {
   const classes: Course[] = await getApi(`/api/v1/courses`, "");
-  console.log(classes);
+  // console.log(classes);
   const assignments = await Promise.all(
     classes.map(async ({ id, name }) => {
       const api: Assignment[] = await getApi(
@@ -48,20 +48,18 @@ async function getAllAssignments(): Promise<AssignmentWithName[]> {
   );
   return assignments.flat();
 }
-getAllAssignments().then((assignments: AssignmentWithName[]) =>
-  console.log(assignments.map(messageGen))
-);
+//getAllAssignments().then((assignments: AssignmentWithName[]) =>
+//  console.log(assignments.map(messageGen))
+//);
 
 function messageGen({
-  description,
+  // description,
   name,
   due_at,
-  html_url,
+  // html_url,
   className,
 }: AssignmentWithName) {
-  return `${className} Assignment ${name} is due at ${due_at} \n${html_url} \n\n${htmlToText(
-    description
-  )}`;
+  return `${className} Assignment ${name} is due at ${due_at}`;
 }
 
 client.on("message", async (msg) => {
@@ -91,6 +89,14 @@ client.on("message", async (msg) => {
     Sunrise: ${sunrise}
     Sunset: ${sunset}
     `);
+  }
+  if (msg.content.startsWith("assignments")) {
+    // let foo = msg.content.split(" ");
+    // let auth = foo[1];
+    msg.channel.send("loading..........");
+    getAllAssignments().then((assignments: AssignmentWithName[]) => {
+      msg.channel.send(assignments.map(messageGen));
+    });
   }
 });
 
