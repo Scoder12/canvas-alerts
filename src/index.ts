@@ -1,6 +1,9 @@
 import { Client } from "discord.js";
 // import { htmlToText } from "html-to-text";
 import fetch from "node-fetch";
+import Database from "@replit/database";
+
+const db = new ((Database as unknown) as typeof import("@replit/database").Client)();
 
 const client = new Client();
 
@@ -67,11 +70,9 @@ client.on("message", async (msg) => {
   if (msg.channel.type !== "dm" || msg.author.id === client.user?.id) return;
   if (msg.content === "Hello") {
     msg.channel.send(`Hello, <@${msg.author.id}>`);
-  }
-  if (msg.content === "AC") {
+  } else if (msg.content === "AC") {
     msg.channel.send("");
-  }
-  if (msg.content.toLowerCase().startsWith("weather ")) {
+  } else if (msg.content.toLowerCase().startsWith("weather ")) {
     let foo = msg.content.split(" ");
     foo.shift();
     const cityname = foo.join("_");
@@ -90,10 +91,17 @@ client.on("message", async (msg) => {
     Sunrise: ${sunrise}
     Sunset: ${sunset}
     `);
-  }
-  if (msg.content.startsWith("assignments")) {
-    let foo = msg.content.split(" ");
-    let auth = foo[1];
+  } else if (msg.content.startsWith("register")) {
+    let args = msg.content.split(" ");
+    let auth = args[1];
+    if (!auth) {
+      msg.channel.send("Error please provide your auth token.");
+      return;
+    }
+    await db.set(msg.author.id, auth);
+    msg.channel.send("Auth set correctly, Bravo!!!");
+  } else if (msg.content.startsWith("assignments")) {
+    const auth = (await db.get(msg.author.id)) as string;
     if (!auth) {
       msg.channel.send("Error please provide your auth token.");
       return;
@@ -104,14 +112,14 @@ client.on("message", async (msg) => {
         msg.channel.send(assignments.map(messageGen));
       })
       .catch(() => msg.channel.send("Please provide a valid token"));
-  }
-  if (msg.content == "help") {
+  } else if (msg.content == "help") {
     msg.channel.send(`Welcome to Spencer and Finn's canvas Assignment Bot
 Step 1 to using this bot is going to ${process.env.CANVAS_URL} and then clicking on your acount then settings
 from there you  need to scroll down till you see Approved Integrations and then press the blue "New Access Token" button.
 From there you will input a purpose(This can be whatever) then inpute the experation date(When it expires you will have to make a new one)
 then click generate token, BE SURE NOT TO CLOSE OUT OF THIS BEFORE YOU COPY YOUR TOKEN(make sure to save this somewhere, and dont let others access it.)
-Step 2 then type assignments followed by your token`);
+Step 2 type register followed by your token
+Step 3 type assignments`);
   }
 });
 
