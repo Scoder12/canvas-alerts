@@ -3,11 +3,12 @@ import { Client } from "discord.js";
 import fetch from "node-fetch";
 import Database from "@replit/database";
 
-const db = new ((Database as unknown) as typeof import("@replit/database").Client)();
+const db =
+  new (Database as unknown as typeof import("@replit/database").Client)();
 
 const client = new Client();
 
-const maxAssignmentTime = 1000 * 60 * 60 * 24 * 7;
+const maxAssignmentTime = 1000 * 60 * 60 * 24 * 4;
 interface Assignment {
   has_submitted_submissions: boolean;
   due_at: string;
@@ -25,6 +26,9 @@ async function getApi(route: string, param: string, auth: string) {
   const r = await fetch(
     `https://${process.env.CANVAS_URL}${route}?access_token=${auth}&per_page=999${param}`
   );
+  const data = await r.json();
+  console.log(data);
+  return data;
   return await r.json();
 }
 
@@ -38,6 +42,7 @@ async function getAllAssignments(auth: string): Promise<AssignmentWithName[]> {
         `&bucket=future`,
         auth
       );
+      if (!Array.isArray(api)) return [];
       return api
         .filter(({ due_at }) => {
           const dueDate = Date.parse(due_at);
@@ -111,20 +116,51 @@ client.on("message", async (msg) => {
       .then((assignments: AssignmentWithName[]) => {
         loadingMessage.edit(assignments.map(messageGen));
       })
-      .catch(() => msg.channel.send("Please provide a valid token"));
+      .catch((e) => {
+        console.log(e);
+        msg.channel.send("Invalid token");
+      });
   } else if (msg.content == "help") {
     msg.channel.send(`Welcome to Spencer and Finn's canvas Assignment Bot
 Step 1 to using this bot is going to ${process.env.CANVAS_URL} and then clicking on your acount then settings
 from there you  need to scroll down till you see Approved Integrations and then press the blue "New Access Token" button.
-From there you will input a purpose(This can be whatever) then inpute the experation date(When it expires you will have to make a new one)
+From there you will input a purpose(This can be whatever) then input the experation date(When it expires you will have to make a new one)
 then click generate token, BE SURE NOT TO CLOSE OUT OF THIS BEFORE YOU COPY YOUR TOKEN(make sure to save this somewhere, and dont let others access it.)
 Step 2 type register followed by your token
-Step 3 type assignments`);
+Step 3 type assignments
+
+BOT WILL AUTOMATTICLY SEND YOU ASSIGNMENTS EVERY 12 HOURS`);
   }
 });
 
+async function sendAssignments(id: string) {
+  const auth = (await db.get(id)) as string;
+  const channel = await client.users.fetch(id);
+  if (!auth) {
+    channel.send("Error please provide your auth token.");
+    return;
+  }
+  const loadingMessage = await channel.send("loading..........");
+  getAllAssignments(auth)
+    .then((assignments: AssignmentWithName[]) => {
+      loadingMessage.edit(assignments.map(messageGen));
+    })
+    .catch((e) => {
+      console.log(e);
+      channel.send("Invalid token");
+    });
+}
+async function sendReminders() {
+  const users = await db.list();
+  for (const id of users) {
+    await sendAssignments(id);
+  }
+}
+
 client.on("ready", () => {
   console.log("Bot logged in");
+  sendReminders();
+  setInterval(sendReminders, 1000 * 60 * 60 * 12);
 });
 
 client.login(process.env.TOKEN);
