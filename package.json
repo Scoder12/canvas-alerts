@@ -24,7 +24,7 @@
     "discord.js": "^12.5.1",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
-    "html-to-text": "^7.0.0",
+    "html-to-text": "^8.1.0",
     "node-fetch": "^2.6.1",
     "passport": "^0.4.1",
     "passport-oauth2": "^1.5.0"
