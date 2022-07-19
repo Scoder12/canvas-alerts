@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@replit/database": "^2.0.1",
-    "discord.js": "^12.5.1",
+    "discord.js": "^14.0.3",
     "express": "^4.17.1",
     "express-session": "^1.17.2",
     "html-to-text": "^7.0.0",
